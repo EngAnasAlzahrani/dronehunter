@@ -10,10 +10,12 @@ class BaseModule:
         self.options[name] = value
     
     def show_options(self):
-        print("\nModule options:")
-        for name, (value, required, desc) in self.options.items():
-            print(f"{name: <20} {value: <15} {required: <10} {desc}")
-        print()
+        for name, option in self.options.items():
+            if len(option) == 3:
+                value, required, desc = option
+                print(f"{name} (Required: {required}): {value} - {desc}")
+            else:
+                print(f"Error: Incorrect number of values for option {name}")
     
     def run(self):
         raise NotImplementedError("You must implement the 'run' method.")

